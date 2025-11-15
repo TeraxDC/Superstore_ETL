@@ -1,0 +1,65 @@
+name: Deploy ETL - Databricks Medallion
+
+# Define cuándo se ejecutará este workflow (ej. al hacer push a la rama principal)
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Permite la ejecución manual desde la interfaz de GitHub
+
+jobs:
+  run-databricks-etl:
+    runs-on: ubuntu-latest
+    
+    # Asegúrate de configurar estos secretos en tu repositorio de GitHub
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      # ----------------------------------------------------------------------
+      # 1. Run Bronze Ingestion (Capa de Ingesta)
+      # ----------------------------------------------------------------------
+      - name: Run 1_Bronze_Ingestion
+        uses: databricks/run-notebook@v1
+        id: bronze_job
+        with:
+          databricks-host: ${{ env.DATABRICKS_HOST }}
+          databricks-token: ${{ env.DATABRICKS_TOKEN }}
+          notebook-path: "/Repos/julio_jesus_96@hotmail.com/Superstore_ETL/proceso/1_bronze_ingestion.py"
+          cluster-id: ${{ env.DATABRICKS_CLUSTER_ID }}
+          # Timeout de 20 minutos para la ingesta
+          job-timeout-seconds: 1200
+          
+      # ----------------------------------------------------------------------
+      # 2. Run Silver Transformation (Capa de Limpieza/Enriquecimiento)
+      # ----------------------------------------------------------------------
+      - name: Run 2_Silver_Transformation
+        uses: databricks/run-notebook@v1
+        if: ${{ always() && steps.bronze_job.outcome == 'success' }} # Solo se ejecuta si Bronze fue exitoso
+        id: silver_job
+        with:
+          databricks-host: ${{ env.DATABRICKS_HOST }}
+          databricks-token: ${{ env.DATABRICKS_TOKEN }}
+          notebook-path: "/Repos/julio_jesus_96@hotmail.com/Superstore_ETL/proceso/2_silver_transformation.py"
+          cluster-id: ${{ env.DATABRICKS_CLUSTER_ID }}
+          # Timeout de 20 minutos
+          job-timeout-seconds: 1200
+
+      # ----------------------------------------------------------------------
+      # 3. Run Gold Aggregation (Capa de Consumo para BI)
+      # ----------------------------------------------------------------------
+      - name: Run 3_Gold_Aggregation
+        uses: databricks/run-notebook@v1
+        if: ${{ always() && steps.silver_job.outcome == 'success' }} # Solo se ejecuta si Silver fue exitoso
+        with:
+          databricks-host: ${{ env.DATABRICKS_HOST }}
+          databricks-token: ${{ env.DATABRICKS_TOKEN }}
+          notebook-path: "/Repos/julio_jesus_96@hotmail.com/Superstore_ETL/proceso/3_gold_aggregation.py"
+          cluster-id: ${{ env.DATABRICKS_CLUSTER_ID }}
+          # Timeout de 10 minutos para la agregación
+          job-timeout-seconds: 600
