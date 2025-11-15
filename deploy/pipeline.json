@@ -1,0 +1,29 @@
+{
+  "name": "PL_Run_Superstore_ETL",
+  "properties": {
+    "activities": [
+      {
+        "name": "Run_Bronze_Ingestion",
+        "type": "DatabricksNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "notebookPath": "/Repos/tu_usuario/tu_repo/proceso/1_bronze_ingestion"
+        },
+        "linkedServiceName": {
+          "referenceName": "LS_AzureDatabricks",
+          "type": "LinkedServiceReference"
+        }
+      }
+      // ... aquí irían las actividades para Silver y Gold
+    ],
+    "annotations": []
+  }
+}
