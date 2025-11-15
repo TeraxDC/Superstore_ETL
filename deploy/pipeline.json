@@ -1,29 +1,81 @@
 {
-  "name": "PL_Run_Superstore_ETL",
+  "name": "PL_ETL_Superstore_Medallion",
   "properties": {
+    "description": "Pipeline de orquestación para la carga de datos Superstore a través de la Arquitectura Medallion (Bronze -> Silver -> Gold).",
     "activities": [
       {
-        "name": "Run_Bronze_Ingestion",
+        "name": "1_Run_Bronze_Ingestion",
         "type": "DatabricksNotebook",
         "dependsOn": [],
         "policy": {
-          "timeout": "0.12:00:00",
-          "retry": 0,
+          "timeout": "0.02:00:00",
+          "retry": 3,
           "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
+          "secureOutput": false
         },
         "userProperties": [],
         "typeProperties": {
-          "notebookPath": "/Repos/tu_usuario/tu_repo/proceso/1_bronze_ingestion"
+          "notebookPath": "/Repos/julio_jesus_96@hotmail.com/Superstore_ETL/proceso/1_bronze_ingestion.py"
+        },
+        "linkedServiceName": {
+          "referenceName": "LS_AzureDatabricks",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "2_Run_Silver_Transformation",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "1_Run_Bronze_Ingestion",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "notebookPath": "/Repos/julio_jesus_96@hotmail.com/Superstore_ETL/proceso/2_silver_transformation.py"
+        },
+        "linkedServiceName": {
+          "referenceName": "LS_AzureDatabricks",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "3_Run_Gold_Aggregation",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "2_Run_Silver_Transformation",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "notebookPath": "/Repos/julio_jesus_96@hotmail.com/Superstore_ETL/proceso/3_gold_aggregation.py"
         },
         "linkedServiceName": {
           "referenceName": "LS_AzureDatabricks",
           "type": "LinkedServiceReference"
         }
       }
-      // ... aquí irían las actividades para Silver y Gold
     ],
-    "annotations": []
+    "annotations": [],
+    "lastPublishTime": "2025-11-14T14:24:00Z"
   }
 }
